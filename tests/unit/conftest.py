@@ -8,6 +8,29 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+
+# ---------------------------------------------------------------------------
+# Prevent pytest from collecting source-module functions that happen to
+# start with ``test_`` (e.g., ``test_node`` in code_gen_flow.py).
+# We override pytest's collection at the module level to skip any function
+# whose code object lives outside the tests/ directory.
+# ---------------------------------------------------------------------------
+_TESTS_ROOT = str(Path(__file__).resolve().parent.parent)
+
+
+def pytest_pycollect_makeitem(collector, name, obj):
+    """Skip functions defined outside the tests directory."""
+    import inspect
+
+    if inspect.isfunction(obj) or inspect.iscoroutinefunction(obj):
+        try:
+            source_file = inspect.getfile(obj)
+        except TypeError:
+            return None
+        if not source_file.startswith(_TESTS_ROOT):
+            return []  # empty list => skip this item
+    return None  # fall through to default collection
+
 # ---------------------------------------------------------------------------
 # Path manipulation so imports match how the services import each other.
 # In production these would be resolved via PYTHONPATH or package installs.
