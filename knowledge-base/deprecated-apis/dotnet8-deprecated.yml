@@ -1,0 +1,49 @@
+# OneStream Deprecated API Registry
+# Platform version: .NET 8 (v8.0+)
+#
+# This file is consumed by the Code Reviewer (verification) agent
+# to flag deprecated API usage in generated code.
+#
+# Format: YAML entries per deprecated item
+
+- api: "BRApi.Utilities.EncryptText"
+  deprecated_in: "8.0"
+  replacement: "System.Security.Cryptography (AES/RSA via .NET native)"
+  severity: "error"
+  note: "Removed in .NET 8 runtime. Will cause compilation failure."
+
+- api: "BRApi.Utilities.DecryptText"
+  deprecated_in: "8.0"
+  replacement: "System.Security.Cryptography (AES/RSA via .NET native)"
+  severity: "error"
+  note: "Removed in .NET 8 runtime. Will cause compilation failure."
+
+- api: "WinSCP"
+  deprecated_in: "8.0"
+  replacement: "SSH.NET (Renci.SshNet) or .NET native SFTP"
+  severity: "error"
+  note: "WinSCP COM interop not supported on .NET 8. Use SSH.NET NuGet package."
+
+- api: "ERPConnect45.dll"
+  deprecated_in: "8.0"
+  replacement: "ERPConnectStandard20.dll"
+  severity: "error"
+  note: "Assembly targets .NET Framework 4.5. Use ERPConnectStandard20 for .NET 8."
+
+- api: "System.Data.SqlClient"
+  deprecated_in: "8.0"
+  replacement: "Microsoft.Data.SqlClient"
+  severity: "warning"
+  note: "System.Data.SqlClient still works but is no longer updated. Microsoft.Data.SqlClient is the maintained successor."
+
+- api: "Legacy SSO / NTLM authentication for REST API"
+  deprecated_in: "8.0"
+  replacement: "OneStream IdentityServer (OIS) with Personal Access Tokens (PATs)"
+  severity: "error"
+  note: "REST API v7.2.0 requires PAT authentication. NTLM is not supported."
+
+- api: "VPN / ExpressRoute for cloud connectivity"
+  deprecated_in: "8.0"
+  replacement: "Smart Integration Connector (SIC)"
+  severity: "warning"
+  note: "SIC is the recommended connectivity method. VPN/ExpressRoute still functional but not recommended for new implementations."

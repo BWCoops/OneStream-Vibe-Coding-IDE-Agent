@@ -1,0 +1,88 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL with pgvector ──
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: onestream_ide
+      POSTGRES_USER: ide_agent
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localdev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ide_agent -d onestream_ide"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ──
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Neo4j (GraphRAG knowledge graph) ──
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-localdev}
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "7474:7474"  # Browser
+      - "7687:7687"  # Bolt
+    volumes:
+      - neo4j_data:/data
+
+  # ── RabbitMQ ──
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ide_agent
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-localdev}
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── EventStoreDB (immutable audit trail) ──
+  eventstoredb:
+    image: eventstore/eventstore:latest
+    environment:
+      EVENTSTORE_INSECURE: "true"
+      EVENTSTORE_RUN_PROJECTIONS: All
+      EVENTSTORE_START_STANDARD_PROJECTIONS: "true"
+    ports:
+      - "2113:2113"  # HTTP + gRPC
+    volumes:
+      - eventstore_data:/var/lib/eventstore
+
+  # ── Langfuse (AI observability) ──
+  langfuse:
+    image: langfuse/langfuse:latest
+    environment:
+      DATABASE_URL: postgresql://ide_agent:${POSTGRES_PASSWORD:-localdev}@postgres:5432/langfuse
+      NEXTAUTH_SECRET: ${LANGFUSE_SECRET:-localdev-secret}
+      NEXTAUTH_URL: http://localhost:3001
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  eventstore_data:

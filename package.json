@@ -1,0 +1,17 @@
+{
+  "name": "onestream-ide-agent",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/web",
+    "packages/api-gateway",
+    "packages/mcp-servers/*"
+  ],
+  "scripts": {
+    "dev:web": "npm -w @onestream-ide/web run dev",
+    "dev:gateway": "npm -w @onestream-ide/api-gateway run dev",
+    "build": "npm --workspaces run build",
+    "test": "npm --workspaces run test",
+    "lint": "npm --workspaces run lint"
+  }
+}

@@ -1,0 +1,48 @@
+[project]
+name = "onestream-orchestrator"
+version = "0.1.0"
+description = "LangGraph-based multi-agent orchestration for OneStream IDE"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.30.0",
+    "langgraph>=0.1.0",
+    "langchain-anthropic>=0.1.0",
+    "langchain-core>=0.2.0",
+    "mcp>=1.0.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.8.0",
+    "structlog>=24.2.0",
+    "asyncpg>=0.29.0",
+    "redis>=5.0.0",
+    "aio-pika>=9.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.5.0",
+    "black>=24.4.0",
+    "mypy>=1.10.0",
+    "deepeval>=0.21.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "A", "SIM"]
+
+[tool.black]
+target-version = ["py312"]
+line-length = 120
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
