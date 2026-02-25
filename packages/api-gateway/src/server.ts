@@ -8,7 +8,11 @@ import { config } from './config.js';
 import { healthRouter } from './routes/health.js';
 import { projectsRouter } from './routes/projects.js';
 import { rulesRouter } from './routes/rules.js';
+import { environmentsRouter } from './routes/environments.js';
+import { pipelinesRouter } from './routes/pipelines.js';
+import { auditRouter } from './routes/audit.js';
 import { chatRouter } from './routes/chat.js';
+import { errorHandler } from './middleware/error-handler.js';
 import { setupWebSocket } from './websocket/handler.js';
 
 const app = express();
@@ -27,7 +31,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use('/api/health', healthRouter);
 app.use('/api/projects', projectsRouter);
 app.use('/api/rules', rulesRouter);
+app.use('/api/environments', environmentsRouter);
+app.use('/api/pipelines', pipelinesRouter);
+app.use('/api/audit', auditRouter);
 app.use('/api/chat', chatRouter);
+
+// Error handling (must be last)
+app.use(errorHandler);
 
 // WebSocket (Yjs sync + streaming)
 setupWebSocket(io);
