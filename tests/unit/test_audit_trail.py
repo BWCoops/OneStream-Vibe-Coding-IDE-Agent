@@ -320,12 +320,18 @@ class TestAppendAuditEntry:
             },
         ]
 
-        with patch("audit.trail.asyncpg") as mock_asyncpg:
-            mock_asyncpg.connect = AsyncMock(return_value=mock_db_conn)
+        # asyncpg is imported inside the function, so we mock it in sys.modules
+        mock_asyncpg = MagicMock()
+        mock_asyncpg.connect = AsyncMock(return_value=mock_db_conn)
 
-            from audit.trail import append_audit_entry
+        import sys
+        with patch.dict(sys.modules, {"asyncpg": mock_asyncpg}):
+            # Force re-import to pick up the mock
+            import importlib
+            import audit.trail
+            importlib.reload(audit.trail)
 
-            result = await append_audit_entry(
+            result = await audit.trail.append_audit_entry(
                 event_type="code_gen",
                 entity_type="rule",
                 entity_id="r1",
@@ -345,12 +351,16 @@ class TestVerifyChainIntegrity:
     async def test_empty_db_returns_valid(self, mock_db_conn):
         mock_db_conn.fetch.return_value = []
 
-        with patch("audit.trail.asyncpg") as mock_asyncpg:
-            mock_asyncpg.connect = AsyncMock(return_value=mock_db_conn)
+        mock_asyncpg = MagicMock()
+        mock_asyncpg.connect = AsyncMock(return_value=mock_db_conn)
 
-            from audit.trail import verify_chain_integrity
+        import sys
+        with patch.dict(sys.modules, {"asyncpg": mock_asyncpg}):
+            import importlib
+            import audit.trail
+            importlib.reload(audit.trail)
 
-            result = await verify_chain_integrity()
+            result = await audit.trail.verify_chain_integrity()
 
             assert result["valid"] is True
             assert result["entries_checked"] == 0

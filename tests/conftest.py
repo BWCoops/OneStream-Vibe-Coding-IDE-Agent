@@ -3,6 +3,14 @@
 import pytest
 
 
+collect_ignore_glob = [
+    "**/services/**",
+    "**/packages/**",
+    "**/infrastructure/**",
+    "**/knowledge-base/**",
+]
+
+
 def pytest_configure(config: pytest.Config) -> None:
     """Register custom markers to avoid warnings."""
     config.addinivalue_line("markers", "unit: Unit tests (fast, no external dependencies)")
