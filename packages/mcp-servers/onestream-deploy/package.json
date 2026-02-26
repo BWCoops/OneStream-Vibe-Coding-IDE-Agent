@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@onestream-ide/mcp-shared": "workspace:*",
+    "@onestream-ide/mcp-shared": "*",
     "zod": "^3.23.8"
   },
   "devDependencies": {
