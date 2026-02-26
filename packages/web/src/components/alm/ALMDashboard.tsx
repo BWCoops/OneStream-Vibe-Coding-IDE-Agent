@@ -21,11 +21,12 @@ const STATUS_STYLES: Record<string, string> = {
 
 export function ALMDashboard() {
   const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([]);
-  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
-    // Fetch change requests on mount
-    api.get<{ change_requests: ChangeRequest[] }>('/audit?entityType=change_request').catch(() => {});
+    api
+      .get<{ change_requests: ChangeRequest[] }>('/audit?entityType=change_request')
+      .then((data) => setChangeRequests(data.change_requests ?? []))
+      .catch(() => {});
   }, []);
 
   return (
@@ -33,7 +34,6 @@ export function ALMDashboard() {
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-medium text-[var(--text-primary)]">ALM Dashboard</h2>
         <button
-          onClick={() => setShowCreate(true)}
           className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--bg-primary)]"
         >
           New Change Request

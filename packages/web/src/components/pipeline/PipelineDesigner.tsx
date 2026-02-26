@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useProjectStore } from '@/stores/projectStore';
 
 interface PipelineStage {
   id: string;

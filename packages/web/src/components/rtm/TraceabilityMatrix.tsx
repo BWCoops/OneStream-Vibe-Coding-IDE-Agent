@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { api } from '@/services/api';
+import { useState } from 'react';
 
 interface RTMEntry {
   requirement_id: string;
@@ -18,8 +17,7 @@ const COVERAGE_COLORS = {
 };
 
 export function TraceabilityMatrix() {
-  const [entries, setEntries] = useState<RTMEntry[]>([]);
-  const [filter, setFilter] = useState('all');
+  const [entries] = useState<RTMEntry[]>([]);
 
   const coverage = (entry: RTMEntry): 'full' | 'partial' | 'none' => {
     const links = [entry.has_implementation, entry.has_tests, entry.has_deployment];
