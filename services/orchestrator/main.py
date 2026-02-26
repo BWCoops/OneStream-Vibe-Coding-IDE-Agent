@@ -13,6 +13,9 @@ from pydantic import BaseModel
 from config import load_llm_config, load_service_config
 from llm_client import LLMClient
 from graphs.code_gen_flow import code_gen_graph
+from graphs.discovery_flow import discovery_graph
+from graphs.migration_flow import migration_flow_graph
+from graphs.pipeline_flow import pipeline_flow_graph
 
 logger = structlog.get_logger()
 
@@ -65,6 +68,24 @@ class ReviewRequest(BaseModel):
     originalRequirement: str = ""
 
 
+class MigrationRequest(BaseModel):
+    sourceCode: str
+    sourcePlatform: str = "bpc"  # "bpc" or "hfm"
+    targetRuntime: str = "net8.0"
+    projectContext: dict = {}
+
+
+class PipelineRequest(BaseModel):
+    request: str
+    targetRuntime: str = "net8.0"
+    projectContext: dict = {}
+
+
+class DiscoveryRequest(BaseModel):
+    userInput: str
+    projectContext: dict = {}
+
+
 # ── Routes ──
 
 
@@ -88,7 +109,15 @@ async def chat(request: ChatRequest) -> dict:
     # Determine intent: code generation, review, migration, etc.
     message_lower = request.message.lower()
 
-    if any(kw in message_lower for kw in ["generate", "create", "write", "build"]):
+    if any(kw in message_lower for kw in ["migrate", "translate", "convert from"]):
+        return {
+            "response": "To migrate code, use the /api/migrate endpoint with your source code and platform.",
+            "agent": "routing",
+            "status": "redirect",
+        }
+    elif any(kw in message_lower for kw in ["pipeline", "data adapter", "data load", "etl"]):
+        return await _run_pipeline(request)
+    elif any(kw in message_lower for kw in ["generate", "create", "write", "build"]):
         return await _run_code_gen(request)
     elif any(kw in message_lower for kw in ["review", "check", "validate"]):
         return {
@@ -137,6 +166,30 @@ async def _run_code_gen(request: ChatRequest) -> dict:
         "review_score": result.get("review_score", 0.0),
         "review_findings": result.get("review_findings", []),
         "test_cases": result.get("test_cases", []),
+    }
+
+
+async def _run_pipeline(request: ChatRequest) -> dict:
+    """Execute the pipeline generation graph from a chat message."""
+    compiled = pipeline_flow_graph.compile()
+
+    initial_state = {
+        "user_request": request.message,
+        "target_runtime": request.targetRuntime,
+        "project_context": {},
+        "requirements": [],
+        "assumptions": [],
+        "questions": [],
+        "retry_count": 0,
+        "_llm": llm_client,
+    }
+
+    result = await compiled.ainvoke(initial_state)
+
+    return {
+        "response": result.get("final_pipeline", {}),
+        "agent": "pipeline_designer",
+        "status": result.get("final_status", "unknown"),
     }
 
 
@@ -202,6 +255,97 @@ async def review_code(request: ReviewRequest) -> dict:
             }
             for f in result.findings
         ],
+    }
+
+
+@app.post("/api/migrate")
+async def migrate_code(request: MigrationRequest) -> dict:
+    """Translate BPC/HFM code to OneStream VB.NET via the migration workflow."""
+    if not llm_client:
+        raise HTTPException(status_code=503, detail="LLM client not initialized")
+
+    compiled = migration_flow_graph.compile()
+
+    initial_state = {
+        "source_code": request.sourceCode,
+        "source_platform": request.sourcePlatform,
+        "target_runtime": request.targetRuntime,
+        "project_context": request.projectContext,
+        "requirements": [],
+        "assumptions": [],
+        "questions": [],
+        "translation_notes": [],
+        "translation_warnings": [],
+        "test_cases": [],
+        "retry_count": 0,
+        "_llm": llm_client,
+    }
+
+    result = await compiled.ainvoke(initial_state)
+
+    return {
+        "translated_code": result.get("final_code", ""),
+        "status": result.get("final_status", "unknown"),
+        "review_score": result.get("review_score", 0.0),
+        "review_findings": result.get("review_findings", []),
+        "translation_notes": result.get("translation_notes", []),
+        "translation_warnings": result.get("translation_warnings", []),
+        "test_cases": result.get("test_cases", []),
+        "requirements": result.get("requirements", []),
+    }
+
+
+@app.post("/api/pipeline")
+async def design_pipeline(request: PipelineRequest) -> dict:
+    """Design a data orchestration pipeline via the pipeline workflow."""
+    if not llm_client:
+        raise HTTPException(status_code=503, detail="LLM client not initialized")
+
+    compiled = pipeline_flow_graph.compile()
+
+    initial_state = {
+        "user_request": request.request,
+        "target_runtime": request.targetRuntime,
+        "project_context": request.projectContext,
+        "requirements": [],
+        "assumptions": [],
+        "questions": [],
+        "retry_count": 0,
+        "_llm": llm_client,
+    }
+
+    result = await compiled.ainvoke(initial_state)
+
+    return {
+        "pipeline": result.get("final_pipeline", {}),
+        "status": result.get("final_status", "unknown"),
+    }
+
+
+@app.post("/api/discover")
+async def discover_requirements(request: DiscoveryRequest) -> dict:
+    """Run the 6-phase requirements discovery workflow."""
+    if not llm_client:
+        raise HTTPException(status_code=503, detail="LLM client not initialized")
+
+    compiled = discovery_graph.compile()
+
+    initial_state = {
+        "user_input": request.userInput,
+        "project_context": request.projectContext,
+        "requirements": [],
+        "assumptions": [],
+        "questions": [],
+        "_llm": llm_client,
+    }
+
+    result = await compiled.ainvoke(initial_state)
+
+    return {
+        "requirements": result.get("requirements", []),
+        "assumptions": result.get("assumptions", []),
+        "questions": result.get("questions", []),
+        "frd_section": result.get("frd_section", ""),
     }
 
 
